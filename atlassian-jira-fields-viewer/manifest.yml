@@ -1,0 +1,27 @@
+#https://developer.atlassian.com/platform/forge/manifest-reference/modules/index-jira/
+modules:
+  #https://developer.atlassian.com/platform/forge/manifest-reference/modules/jira-global-page/
+  jira:globalPage:
+    - key: atlassian-jira-fields-viewer
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: Atlassian Jira Fields Viewer
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/8f9aa1be-1ca1-479b-84b7-82662f400160
+permissions:
+  scopes:
+  #https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
+    - read:jira-work
+    - read:field:jira

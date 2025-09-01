@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { DynamicTable } from '@forge/react';
+import ForgeReconciler, { DynamicTable, TextField } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 const App = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
     invoke('getAllFields')
@@ -22,7 +23,12 @@ const App = () => {
     ],
   };
 
-  const sortedFields = [...fields].sort((a, b) => {
+  // Filter fields by Field Name
+  const filteredFields = fields.filter(field =>
+    field.name?.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const sortedFields = [...filteredFields].sort((a, b) => {
     const aName = a.name || '';
     const bName = b.name || '';
     return aName.localeCompare(bName);
@@ -40,13 +46,20 @@ const App = () => {
   }));
 
   return (
-    <DynamicTable
-      caption="List of Jira Fields in this Jira instance"
-      head={head}
-      rows={rows}
-      isLoading={loading}
-      emptyView="No fields to display"
-    />
+    <>
+      <TextField
+        label="Filter by Field Name"
+        value={filter}
+        onChange={e => setFilter(e.target.value)}
+      />
+      <DynamicTable
+        caption="List of Jira Fields in this Jira instance"
+        head={head}
+        rows={rows}
+        isLoading={loading}
+        emptyView="No fields to display"
+      />
+    </>
   );
 };
 

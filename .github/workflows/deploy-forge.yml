@@ -27,4 +27,6 @@ jobs:
           chmod 600 ~/.netrc
 
       - name: Deploy Forge App
-        run: forge deploy --non-interactive
+        run: |
+          forge settings set usage-analytics false
+          forge deploy --non-interactive

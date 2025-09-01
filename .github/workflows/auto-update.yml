@@ -1,6 +1,8 @@
 name: Monthly NPM Audit Fix and PR
 
 on:
+  push:
+    branches: [ '*' ]
   schedule:
     - cron: '0 2 1 * *'  # At 02:00 AM on the 1st day of every month
   workflow_dispatch:     # Also allows manual trigger

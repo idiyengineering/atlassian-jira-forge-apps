@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { DynamicTable, TextField } from '@forge/react';
+import ForgeReconciler, { Label, DynamicTable, Textfield } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 const App = () => {
@@ -47,13 +47,14 @@ const App = () => {
 
   return (
     <>
-      <TextField
-        label="Filter by Field Name"
-        value={filter || ''}
-        onChange={e => setFilter(e.target.value || '')}
+      <Label labelFor="filter">Filter by Field Name</Label>
+      <Textfield
+        id="filter"
+        value={filter}
+        onChange={(e) => setFilter(e?.target?.value || '')}
       />
+      <Label>List of Jira Fields in this Jira instance</Label>
       <DynamicTable
-        caption="List of Jira Fields in this Jira instance"
         head={head}
         rows={rows}
         isLoading={loading}

@@ -31,5 +31,17 @@ jobs:
           export FORGE_EMAIL=${{ secrets.FORGE_EMAIL }}
           export FORGE_API_TOKEN=${{ secrets.FORGE_API_TOKEN }}
           forge settings set usage-analytics false
+
+          # Determine environment based on branch
+          if [ "${GITHUB_REF##*/}" = "main" ]; then
+            ENVIRONMENT="production"
+          elif [ "${GITHUB_REF##*/}" = "develop" ]; then
+            ENVIRONMENT="staging"
+          else
+            ENVIRONMENT="development"
+          fi
+
+          echo "Deploying to Forge environment: $ENVIRONMENT"
+
           cd atlassian-jira-fields-viewer
-          forge deploy --non-interactive -e development
+          forge deploy --non-interactive -e "$ENVIRONMENT"

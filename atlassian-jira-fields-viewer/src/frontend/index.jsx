@@ -5,8 +5,6 @@ import { invoke } from '@forge/bridge';
 const App = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortKey, setSortKey] = useState('name');
-  const [sortOrder, setSortOrder] = useState('ASC');
 
   useEffect(() => {
     invoke('getAllFields')
@@ -16,24 +14,25 @@ const App = () => {
 
   const head = {
     cells: [
-      { key: 'name', content: 'Name'},
-      { key: 'key', content: 'Key'},
-      { key: 'type', content: 'Type'},
+      { key: 'number', content: '#' }, // Row number column
+      { key: 'name', content: 'Field Name' },
+      { key: 'key', content: 'Field ID' },
+      { key: 'type', content: 'Field Type' },
     ],
   };
 
   // Sorting logic
   const sortedFields = [...fields].sort((a, b) => {
-    const aValue = sortKey === 'type' ? a.schema?.type || '' : a[sortKey] || '';
-    const bValue = sortKey === 'type' ? b.schema?.type || '' : b[sortKey] || '';
-    if (aValue < bValue) return sortOrder === 'ASC' ? -1 : 1;
-    if (aValue > bValue) return sortOrder === 'ASC' ? 1 : -1;
-    return 0;
+    const aName = a.name || '';
+    const bName = b.name || '';
+    return aName.localeCompare(bName);
   });
 
-  const rows = sortedFields.map(field => ({
+
+  const rows = sortedFields.map((field, index) => ({
     key: field.id,
     cells: [
+      { key: 'number', content: index + 1 }, // Add row number here
       { key: 'name', content: field.name },
       { key: 'key', content: field.key },
       { key: 'type', content: field.schema?.type || 'N/A' },
@@ -48,8 +47,6 @@ const App = () => {
         rows={rows}
         isLoading={loading}
         emptyView="No fields to display"
-        defaultSortKey="name"
-        defaultSortOrder="ASC"
       />
     </>
   );

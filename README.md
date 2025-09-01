@@ -19,8 +19,7 @@ It's particularly useful for Jira admins, developers, and automation engineers w
 
 ## 📷 Screenshots
 
-<!-- Add screenshots if available -->
-> _Coming soon_
+![Screenshot](./docs/UI%20Screenshot.png)
 
 ---
 

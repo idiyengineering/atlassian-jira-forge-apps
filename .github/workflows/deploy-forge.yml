@@ -21,10 +21,8 @@ jobs:
       - name: Install Forge CLI
         run: npm install -g @forge/cli
 
-    #   - name: Authenticate with Forge
-    #     run: |
-    #       echo "machine api.atlassian.com login ${{ secrets.FORGE_EMAIL }} password ${{ secrets.FORGE_API_TOKEN }}" > ~/.netrc
-    #       chmod 600 ~/.netrc
+      - name: Install dependencies
+        run: npm install
 
       - name: Deploy Forge App
         run: |

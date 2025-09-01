@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { Text, DynamicTable } from '@forge/react';
+import ForgeReconciler, { DynamicTable } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 const App = () => {
@@ -40,15 +40,13 @@ const App = () => {
   }));
 
   return (
-    <>
-      <DynamicTable
-        caption="List of Jira Fields in this Jira instance"
-        head={head}
-        rows={rows}
-        isLoading={loading}
-        emptyView="No fields to display"
-      />
-    </>
+    <DynamicTable
+      caption="List of Jira Fields in this Jira instance"
+      head={head}
+      rows={rows}
+      isLoading={loading}
+      emptyView="No fields to display"
+    />
   );
 };
 

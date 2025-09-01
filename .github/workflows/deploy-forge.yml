@@ -22,7 +22,9 @@ jobs:
         run: npm install -g @forge/cli
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm install
 
       - name: Deploy Forge App
         run: |

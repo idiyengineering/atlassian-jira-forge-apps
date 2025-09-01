@@ -18,7 +18,7 @@ const App = () => {
       { key: 'name', content: 'Field Name' },
       { key: 'key', content: 'Field ID' },
       { key: 'type', content: 'Field Type' },
-      { key: 'projectName', content: 'Project Name' }, // 👈 new column
+      { key: 'projectName', content: 'Project Name' },
     ],
   };
 
@@ -35,7 +35,7 @@ const App = () => {
       { key: 'name', content: field.name },
       { key: 'key', content: field.key },
       { key: 'type', content: field.schema?.type || 'N/A' },
-      { key: 'projectName', content: field.projectName || '-' }, // 👈 show project name or placeholder
+      { key: 'projectName', content: field.projectName || '-' },
     ],
   }));
 

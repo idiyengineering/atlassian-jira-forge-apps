@@ -1,0 +1,30 @@
+name: Deploy Atlassian Forge App
+
+on:
+  push:
+    branches: [ '*' ]
+  workflow_dispatch: # allows manual runs from the GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Forge CLI
+        run: npm install -g @forge/cli
+
+      - name: Authenticate with Forge
+        run: |
+          echo "machine api.atlassian.com login ${{ secrets.FORGE_EMAIL }} password ${{ secrets.FORGE_API_TOKEN }}" > ~/.netrc
+          chmod 600 ~/.netrc
+
+      - name: Deploy Forge App
+        run: forge deploy --non-interactive

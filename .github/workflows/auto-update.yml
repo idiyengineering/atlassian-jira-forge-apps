@@ -56,7 +56,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore: monthly npm audit fix'
+          commit-message: 'chore- monthly npm audit fix'
           branch: ${{ github.ref_name }}
           base: develop
           title: "Monthly npm audit fix"

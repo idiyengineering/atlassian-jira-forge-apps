@@ -49,8 +49,8 @@ const App = () => {
     <>
       <TextField
         label="Filter by Field Name"
-        value={filter}
-        onChange={e => setFilter(e.target.value)}
+        value={filter || ''}
+        onChange={e => setFilter(e.target.value || '')}
       />
       <DynamicTable
         caption="List of Jira Fields in this Jira instance"

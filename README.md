@@ -27,13 +27,3 @@ It's particularly useful for Jira admins, developers, and automation engineers w
 ## 🛠️ Installation
 
 This app is built using Atlassian Forge and must be deployed within your own Jira Cloud instance.
-
-### Prerequisites
-
-- Node.js (v22.x recommended)
-- Atlassian CLI (`@forge/cli`)
-- Access to Jira Cloud
-- Forge installed and logged in (`forge login`)
-
-### Steps
-

@@ -1,0 +1,63 @@
+name: Monthly NPM Audit Fix and PR
+
+on:
+  schedule:
+    - cron: '0 2 1 * *'  # At 02:00 AM on the 1st day of every month
+  workflow_dispatch:     # Also allows manual trigger
+
+jobs:
+  audit-fix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm install
+
+      - name: Run npm audit fix
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm audit fix
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git status
+          # Check if any files changed
+          echo "::set-output name=changed::$(git status --porcelain | wc -l)"
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changed != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create a branch for audit fixes
+          BRANCH="npm-audit-fix-$(date +'%Y%m%d-%H%M%S')"
+          git checkout -b $BRANCH
+
+          git add atlassian-jira-fields-viewer/package-lock.json atlassian-jira-fields-viewer/package.json
+          git commit -m "chore: monthly npm audit fix"
+          git push --set-upstream origin $BRANCH
+
+      - name: Create Pull Request
+        if: steps.git-check.outputs.changed != '0'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: chore: monthly npm audit fix
+          branch: ${{ github.ref_name }}
+          base: develop
+          title: "Monthly npm audit fix"
+          body: "Automated PR with fixes from npm audit fix"

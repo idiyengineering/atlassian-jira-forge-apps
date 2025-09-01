@@ -29,4 +29,5 @@ jobs:
       - name: Deploy Forge App
         run: |
           forge settings set usage-analytics false
-          forge deploy --non-interactive
+          cd atlassian-jira-fields-viewer
+          forge deploy --non-interactive -e development

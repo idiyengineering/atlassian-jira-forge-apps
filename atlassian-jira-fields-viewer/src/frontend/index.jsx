@@ -14,28 +14,28 @@ const App = () => {
 
   const head = {
     cells: [
-      { key: 'number', content: '#' }, // Row number column
+      { key: 'number', content: '#' },
       { key: 'name', content: 'Field Name' },
       { key: 'key', content: 'Field ID' },
       { key: 'type', content: 'Field Type' },
+      { key: 'projectName', content: 'Project Name' },
     ],
   };
 
-  // Sorting logic
   const sortedFields = [...fields].sort((a, b) => {
     const aName = a.name || '';
     const bName = b.name || '';
     return aName.localeCompare(bName);
   });
 
-
   const rows = sortedFields.map((field, index) => ({
     key: field.id,
     cells: [
-      { key: 'number', content: index + 1 }, // Add row number here
+      { key: 'number', content: index + 1 },
       { key: 'name', content: field.name },
       { key: 'key', content: field.key },
       { key: 'type', content: field.schema?.type || 'N/A' },
+      { key: 'projectName', content: field.projectName || '-' },
     ],
   }));
 

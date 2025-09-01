@@ -3,11 +3,6 @@ import api, { route } from '@forge/api';
 
 const resolver = new Resolver();
 
-resolver.define('getText', (req) => {
-  console.log(req);
-  return 'Hello, world!';
-});
-
 resolver.define('getAllFields', async (req) => {
   const response = await api.asApp().requestJira(route`/rest/api/3/field`, {
     headers: {

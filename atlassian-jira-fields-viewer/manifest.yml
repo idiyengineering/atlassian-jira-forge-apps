@@ -2,12 +2,12 @@
 modules:
   #https://developer.atlassian.com/platform/forge/manifest-reference/modules/jira-global-page/
   jira:globalPage:
-    - key: atlassian-jira-fields-viewer
+    - key: jira-fields-viewer
       resource: main
       resolver:
         function: resolver
       render: native
-      title: Atlassian Jira Fields Viewer
+      title: Jira Fields Viewer
   function:
     - key: resolver
       handler: index.handler

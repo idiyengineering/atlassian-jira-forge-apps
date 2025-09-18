@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { Label, DynamicTable, Textfield } from '@forge/react';
+import ForgeReconciler, { Label, DynamicTable, Textfield, Tabs, TabList, Tab, TabPanel, Box} from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 const App = () => {
@@ -15,7 +15,7 @@ const App = () => {
 
   const head = {
     cells: [
-      { key: 'number', content: '#' },
+      { key: 'number', content: '#', width: 2 },
       { key: 'name', content: 'Field Name' },
       { key: 'key', content: 'Field ID' },
       { key: 'type', content: 'Field Type' },
@@ -77,26 +77,40 @@ const App = () => {
   // --- 💡 UI Rendering ---
   return (
     <>
-      <Label labelFor="filter">Filter by Field Name</Label>
-      <Textfield
-        id="filter"
-        value={filter}
-        onChange={(e) => setFilter(e?.target?.value || '')}
-      />
-      <Label>List of Jira Fields in this Jira instance</Label>
-      <DynamicTable
-        head={head}
-        rows={rows}
-        isLoading={loading}
-        emptyView="No fields to display"
-      />
-      <Label>List of Duplicate Jira Fields in this Jira instance</Label>
-      <DynamicTable
-        head={head}
-        rows={duplicateRows}
-        isLoading={loading}
-        emptyView="No duplicate fields"
-      />
+      <Tabs id="default">
+        <TabList>
+          <Tab>List of Jira Fields in this Jira instance</Tab>
+          <Tab>List of Duplicate Jira Fields in this Jira instance</Tab>
+        </TabList>
+        <TabPanel>
+          <Box padding="space.300">
+            <Label labelFor="filter">Filter by Field Name</Label>
+            <Textfield
+              id="filter"
+              value={filter}
+              onChange={(e) => setFilter(e?.target?.value || '')}
+            />
+            <DynamicTable
+              head={head}
+              rows={rows}
+              isLoading={loading}
+              emptyView="No fields to display"
+              isFixedSize={true}
+            />
+          </Box>
+        </TabPanel>
+        <TabPanel>
+          <Box padding="space.300">
+            <DynamicTable
+              head={head}
+              rows={duplicateRows}
+              isLoading={loading}
+              emptyView="No duplicate fields"
+              isFixedSize={true}
+            />
+          </Box>
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

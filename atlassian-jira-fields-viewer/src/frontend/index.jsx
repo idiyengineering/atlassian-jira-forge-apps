@@ -23,6 +23,36 @@ const App = () => {
     ],
   };
 
+  // Helper: Get duplicate field names
+  const getDuplicateFields = (fields) => {
+    const nameCount = {};
+    const duplicates = [];
+
+    fields.forEach(field => {
+      const name = field.name || '';
+      nameCount[name] = (nameCount[name] || 0) + 1;
+    });
+
+    const duplicateNames = new Set(
+      Object.entries(nameCount)
+        .filter(([_, count]) => count > 1)
+        .map(([name]) => name)
+    );
+
+    return fields.filter(field => duplicateNames.has(field.name));
+  };
+  
+  const duplicateRows = getDuplicateFields(fields).map((field, index) => ({
+    key: `dup-${field.id}`,
+    cells: [
+      { key: 'number', content: index + 1 },
+      { key: 'name', content: field.name },
+      { key: 'key', content: field.key },
+      { key: 'type', content: field.schema?.type || 'N/A' },
+      { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
+    ],
+  }));
+
   // Filter fields by Field Name
   const filteredFields = fields.filter(field =>
     field.name?.toLowerCase().includes(filter.toLowerCase())
@@ -41,7 +71,7 @@ const App = () => {
       { key: 'name', content: field.name },
       { key: 'key', content: field.key },
       { key: 'type', content: field.schema?.type || 'N/A' },
-      { key: 'projectName', content: field.projectName || '-' },
+      { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
     ],
   }));
 
@@ -59,6 +89,13 @@ const App = () => {
         rows={rows}
         isLoading={loading}
         emptyView="No fields to display"
+      />
+      <Label>List of Duplicate Jira Fields in this Jira instance</Label>
+      <DynamicTable
+        head={head}
+        rows={duplicateRows}
+        isLoading={loading}
+        emptyView="No duplicate fields"
       />
     </>
   );

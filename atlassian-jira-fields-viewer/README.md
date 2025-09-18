@@ -20,7 +20,7 @@ It's particularly useful for Jira admins, developers, and automation engineers w
 ## 📷 Screenshots
 
 ![Screenshot](./docs/UI%20Screenshot.png)
-
+![Screenshot](./docs/UI%20Screenshot2.png)
 ---
 
 ## 🛠️ Installation

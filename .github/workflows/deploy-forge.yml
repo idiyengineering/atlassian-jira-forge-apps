@@ -26,6 +26,16 @@ jobs:
           cd atlassian-jira-fields-viewer
           npm install
 
+      - name: Run linter
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm run lint
+
+      - name: Run tests
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm run test
+
       - name: Deploy Forge App
         run: |
           export FORGE_EMAIL=${{ secrets.FORGE_EMAIL }}

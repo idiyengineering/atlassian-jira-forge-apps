@@ -1,20 +1,27 @@
 import api, { route } from '@forge/api';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the Forge API
-jest.mock('@forge/api');
+vi.mock('@forge/api', () => ({
+  __esModule: true,
+  default: {
+    asApp: vi.fn(),
+  },
+  route: vi.fn(),
+}));
 
 // Mock the Forge Resolver
-jest.mock('@forge/resolver', () => {
+vi.mock('@forge/resolver', () => {
   let storedFunctions = {};
   
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(function() {
+    default: vi.fn().mockImplementation(function() {
       return {
-        define: jest.fn((name, fn) => {
+        define: vi.fn((name, fn) => {
           storedFunctions[name] = fn;
         }),
-        getDefinitions: jest.fn(() => storedFunctions),
+        getDefinitions: vi.fn(() => storedFunctions),
       };
     }),
   };
@@ -32,11 +39,11 @@ describe('Resolvers', () => {
 
   beforeEach(() => {
     // Reset mocks before each test
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Setup the mock chain
-    mockRequestJira = jest.fn();
-    api.asApp = jest.fn().mockReturnValue({
+    mockRequestJira = vi.fn();
+    api.asApp = vi.fn().mockReturnValue({
       requestJira: mockRequestJira,
     });
     

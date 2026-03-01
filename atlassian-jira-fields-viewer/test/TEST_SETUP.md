@@ -1,16 +1,15 @@
 # Test Setup for Jira Fields Viewer
 
-This document explains the test setup for the Jira Fields Viewer frontend application.
+This document explains the Vitest setup for the Jira Fields Viewer application.
 
 ## Test Files
 
 All test files are located in the `test/` directory at the project root:
 
 1. **test/index.test.jsx** - Main test file for the App component
-2. **test/jest.config.js** - Jest configuration
-3. **test/jest.setup.js** - Jest setup file
-4. **test/.babelrc** - Babel configuration for transpiling JSX
-5. **test/TEST_SETUP.md** - This documentation file
+2. **test/vitest.config.js** - Vitest configuration
+3. **test/vitest.setup.js** - Vitest setup file
+4. **test/TEST_SETUP.md** - This documentation file
 
 ## Running Tests
 
@@ -66,7 +65,7 @@ Mock field data includes:
 
 ### Coverage Thresholds
 
-Configured in `test/jest.config.js`:
+Configured in `test/vitest.config.js`:
 - Branches: 70%
 - Functions: 70%
 - Lines: 70%
@@ -111,13 +110,9 @@ Make sure all dependencies are installed:
 npm install
 ```
 
-### Babel errors
-
-Ensure `test/.babelrc` is present with the correct presets.
-
 ### Module not found errors
 
-Check that `test/jest.config.js` has the correct `moduleNameMapper` configuration.
+Check that `test/vitest.config.js` has the expected include/setup configuration.
 
 ### Async warnings
 

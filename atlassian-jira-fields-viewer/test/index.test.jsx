@@ -1,18 +1,18 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { invoke } from '@forge/bridge';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock @forge/bridge
-jest.mock('@forge/bridge', () => ({
-  invoke: jest.fn(),
+vi.mock('@forge/bridge', () => ({
+  invoke: vi.fn(),
 }));
 
 // Mock @forge/react components
-jest.mock('@forge/react', () => ({
+vi.mock('@forge/react', () => ({
   __esModule: true,
   default: {
-    render: jest.fn(),
+    render: vi.fn(),
   },
   Label: ({ children, labelFor }) => <label htmlFor={labelFor}>{children}</label>,
   DynamicTable: ({ head, rows, isLoading, emptyView }) => {
@@ -90,7 +90,7 @@ const mockFields = [
 
 describe('Jira Fields Viewer App', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Component Rendering', () => {

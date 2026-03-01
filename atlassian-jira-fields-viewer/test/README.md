@@ -1,15 +1,14 @@
 # Test Directory
 
-This directory contains all test files and test configuration for the Jira Fields Viewer application.
+This directory contains all unit tests and test configuration for the Jira Fields Viewer application.
 
 ## Structure
 
 ```
 test/
-├── .babelrc           # Babel configuration for test transpilation
-├── jest.config.js     # Jest test runner configuration
-├── jest.setup.js      # Jest setup file (imports test utilities)
+├── vitest.setup.js    # Vitest setup file (imports test utilities)
 ├── index.test.jsx     # Tests for src/frontend/index.jsx
+├── resolvers.test.js  # Tests for src/resolvers/index.js
 ├── TEST_SETUP.md      # Detailed test setup documentation
 └── README.md          # This file
 ```

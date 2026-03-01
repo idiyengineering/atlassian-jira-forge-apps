@@ -16,7 +16,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          cache: npm
+          cache-dependency-path: atlassian-jira-fields-viewer/package-lock.json
 
       - name: Install Forge CLI
         run: npm install -g @forge/cli
@@ -24,7 +26,17 @@ jobs:
       - name: Install dependencies
         run: |
           cd atlassian-jira-fields-viewer
-          npm install
+          npm ci
+
+      - name: Run linter
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm run lint
+
+      - name: Run tests
+        run: |
+          cd atlassian-jira-fields-viewer
+          npm run test
 
       - name: Deploy Forge App
         run: |

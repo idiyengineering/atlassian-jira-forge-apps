@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ForgeReconciler, { Label, DynamicTable, Textfield, Tabs, TabList, Tab, TabPanel, Box} from '@forge/react';
 import { invoke } from '@forge/bridge';
 
-const App = () => {
+export const App = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');

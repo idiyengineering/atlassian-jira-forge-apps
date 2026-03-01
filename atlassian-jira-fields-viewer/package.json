@@ -4,12 +4,26 @@
   "main": "index.js",
   "license": "MIT",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
-    "lint": "eslint src/**/*"
+    "lint": "eslint src/**/*",
+    "test": "vitest run --config test/vitest.config.js",
+    "test:watch": "vitest --config test/vitest.config.js",
+    "test:coverage": "vitest run --config test/vitest.config.js --coverage"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.23.0",
+    "@babel/preset-react": "^7.23.0",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
     "eslint": "^8.56.0",
-    "eslint-plugin-react-hooks": "^4.6.0"
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@forge/api": "^6.1.0",

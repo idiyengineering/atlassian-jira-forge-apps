@@ -79,7 +79,7 @@ export const App = () => {
         };
       });
 
-      invoke('getFieldOptions', { fieldId })
+      invoke('getFieldOptions', { fieldId, projectId: field?.scope?.project?.id })
         .then((options) => {
           setFieldOptionState((prev) => ({
             ...prev,

@@ -36,6 +36,7 @@ resolver.define('getAllFields', async () => {
 
 resolver.define('getFieldOptions', async ({ payload }) => {
   const fieldId = payload?.fieldId;
+  const projectId = payload?.projectId;
   if (!fieldId) {
     return [];
   }
@@ -99,7 +100,47 @@ resolver.define('getFieldOptions', async ({ payload }) => {
       }
     }
 
-    const result = Array.from(new Set(optionValues)).sort((a, b) => a.localeCompare(b));
+    let result = Array.from(new Set(optionValues)).sort((a, b) => a.localeCompare(b));
+
+    // Team-managed fields can return empty context options; use create metadata as fallback.
+    if (result.length === 0 && projectId) {
+      const createMetaResponse = await requestJiraWithFallback(
+        route`/rest/api/3/issue/createmeta?projectIds=${projectId}&expand=projects.issuetypes.fields`
+      );
+
+      if (createMetaResponse.ok) {
+        const createMetaData = await createMetaResponse.json();
+        const projects = createMetaData?.projects || [];
+        const metaValues = [];
+
+        for (const project of projects) {
+          const issueTypes = project?.issuetypes || [];
+          for (const issueType of issueTypes) {
+            const fieldMeta = issueType?.fields?.[fieldId];
+            const allowedValues = fieldMeta?.allowedValues || [];
+            for (const item of allowedValues) {
+              const value = item?.value || item?.name;
+              if (value) {
+                metaValues.push(value);
+              }
+            }
+          }
+        }
+
+        if (metaValues.length > 0) {
+          result = Array.from(new Set(metaValues)).sort((a, b) => a.localeCompare(b));
+          console.log(
+            `[getFieldOptions] fieldId=${fieldId} populated from createmeta fallback optionCount=${result.length}`
+          );
+        }
+      } else {
+        const responseText = await createMetaResponse.text();
+        console.error(
+          `[getFieldOptions] createmeta fallback failed for fieldId=${fieldId} projectId=${projectId} status=${createMetaResponse.status} body=${responseText}`
+        );
+      }
+    }
+
     console.log(`[getFieldOptions] fieldId=${fieldId} optionCount=${result.length}`);
     return result;
   } catch (error) {

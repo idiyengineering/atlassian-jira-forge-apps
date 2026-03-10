@@ -340,7 +340,10 @@ describe('Jira Fields Viewer App', () => {
         expect(screen.getByText('Low, Medium, High')).toBeInTheDocument();
       });
 
-      expect(invoke).toHaveBeenCalledWith('getFieldOptions', { fieldId: 'customfield_10010' });
+      expect(invoke).toHaveBeenCalledWith(
+        'getFieldOptions',
+        expect.objectContaining({ fieldId: 'customfield_10010' })
+      );
     });
   });
 });

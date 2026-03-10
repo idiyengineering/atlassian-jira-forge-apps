@@ -285,5 +285,41 @@ describe('Resolvers', () => {
       const result = await handler.getFieldOptions({ payload: { fieldId: 'customfield_10001' } });
       expect(result).toEqual([]);
     });
+
+    it('should use create metadata fallback when context options are empty', async () => {
+      mockRequestJira
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ values: [{ id: '10' }] }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ values: [] }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            projects: [
+              {
+                issuetypes: [
+                  {
+                    fields: {
+                      customfield_10124: {
+                        allowedValues: [{ value: 'Option A' }, { value: 'Option B' }],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+      const result = await handler.getFieldOptions({
+        payload: { fieldId: 'customfield_10124', projectId: '10001' },
+      });
+
+      expect(result).toEqual(['Option A', 'Option B']);
+    });
   });
 });

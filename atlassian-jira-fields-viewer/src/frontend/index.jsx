@@ -9,7 +9,6 @@ import ForgeReconciler, {
   TabPanel,
   Box,
   Tooltip,
-  Button,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
@@ -60,11 +59,46 @@ export const App = () => {
     );
   };
 
+  useEffect(() => {
+    const optionFields = fields.filter(isOptionBasedField);
+
+    optionFields.forEach((field) => {
+      const fieldId = field?.id;
+      if (!fieldId) {
+        return;
+      }
+
+      setFieldOptionState((prev) => {
+        if (prev[fieldId]) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [fieldId]: { status: 'loading', options: [] },
+        };
+      });
+
+      invoke('getFieldOptions', { fieldId })
+        .then((options) => {
+          setFieldOptionState((prev) => ({
+            ...prev,
+            [fieldId]: { status: 'loaded', options: Array.isArray(options) ? options : [] },
+          }));
+        })
+        .catch(() => {
+          setFieldOptionState((prev) => ({
+            ...prev,
+            [fieldId]: { status: 'error', options: [] },
+          }));
+        });
+    });
+  }, [fields]);
+
   const getOptionsTooltipText = (fieldId) => {
     const fieldState = fieldOptionState[fieldId];
 
     if (!fieldState) {
-      return 'Hover for details, click to load field options';
+      return 'Loading options...';
     }
 
     if (fieldState.status === 'loading') {
@@ -87,7 +121,7 @@ export const App = () => {
       return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
     }
 
-    return 'Click to load field options';
+    return 'Loading options...';
   };
 
   const getFieldTypeContent = (field) => {
@@ -99,53 +133,18 @@ export const App = () => {
     const fieldId = field?.id;
     const fieldState = fieldOptionState[fieldId];
     const optionCount = fieldState?.status === 'loaded' ? fieldState.options.length : null;
-    const label = optionCount && optionCount > 0 ? `${fieldType} (${optionCount})` : fieldType;
-    const isLoading = fieldState?.status === 'loading';
+    const isLoading = !fieldState || fieldState?.status === 'loading';
     const isError = fieldState?.status === 'error';
-    const buttonText = isLoading
+    const label = optionCount && optionCount > 0 ? `${fieldType} (${optionCount})` : fieldType;
+    const text = isLoading
       ? `${label} (loading...)`
       : isError
-        ? `${label} (retry)`
-        : optionCount === null
-          ? `${label} (show options)`
-          : label;
-
-    const loadOptions = async () => {
-      if (!fieldId) {
-        return;
-      }
-
-      if (fieldState?.status === 'loaded' || fieldState?.status === 'loading') {
-        return;
-      }
-
-      setFieldOptionState((prev) => ({
-        ...prev,
-        [fieldId]: { status: 'loading', options: [] },
-      }));
-
-      try {
-        const options = await invoke('getFieldOptions', { fieldId });
-        setFieldOptionState((prev) => ({
-          ...prev,
-          [fieldId]: { status: 'loaded', options: Array.isArray(options) ? options : [] },
-        }));
-      } catch (error) {
-        setFieldOptionState((prev) => ({
-          ...prev,
-          [fieldId]: { status: 'error', options: [] },
-        }));
-      }
-    };
+        ? `${label} (options unavailable)`
+        : label;
 
     return (
       <Tooltip text={getOptionsTooltipText(fieldId)}>
-        <Button
-          text={buttonText}
-          appearance="subtle"
-          onClick={loadOptions}
-          disabled={isLoading}
-        />
+        {text}
       </Tooltip>
     );
   };

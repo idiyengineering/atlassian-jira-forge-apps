@@ -54,11 +54,6 @@ vi.mock('@forge/react', () => ({
   TabPanel: ({ children }) => <div data-testid="tab-panel">{children}</div>,
   Box: ({ children, padding }) => <div data-testid="box" data-padding={padding}>{children}</div>,
   Tooltip: ({ text, children }) => <span data-tooltip={text}>{children}</span>,
-  Button: ({ text, onClick, disabled }) => (
-    <button type="button" disabled={disabled} onClick={onClick}>
-      {text}
-    </button>
-  ),
 }));
 
 // Import the App component
@@ -338,9 +333,6 @@ describe('Jira Fields Viewer App', () => {
       });
 
       render(<App />);
-
-      const loadButton = await screen.findByRole('button', { name: 'option (show options)' });
-      fireEvent.click(loadButton);
 
       await waitFor(() => {
         expect(screen.getByText('option (3)')).toBeInTheDocument();

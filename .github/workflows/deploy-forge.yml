@@ -70,9 +70,10 @@ jobs:
           forge settings set usage-analytics false
 
           # Determine environment based on branch
-          if [ "${GITHUB_REF##*/}" = "main" ]; then
+          BRANCH_NAME="${{ github.ref_name }}"
+          if [ "$BRANCH_NAME" = "main" ]; then
             ENVIRONMENT="production"
-          elif [ "${GITHUB_REF##*/}" = "develop" ]; then
+          elif [ "$BRANCH_NAME" = "develop" ]; then
             ENVIRONMENT="staging"
           else
             ENVIRONMENT="development"

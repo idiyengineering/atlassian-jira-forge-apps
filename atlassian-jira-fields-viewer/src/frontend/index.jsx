@@ -110,7 +110,7 @@ export const App = () => {
     return () => {
       isCancelled = true;
     };
-  }, [fields, fieldOptionState]);
+  }, [fields]);
 
   const formatOptionValues = (options, limit) => {
     if (!options.length) {

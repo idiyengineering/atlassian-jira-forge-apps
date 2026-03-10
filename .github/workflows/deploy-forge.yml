@@ -2,12 +2,49 @@ name: Deploy Atlassian Forge App
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
   workflow_dispatch: # allows manual runs from the GitHub UI
 
 jobs:
-  deploy:
+  ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: atlassian-jira-fields-viewer
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: atlassian-jira-fields-viewer/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: atlassian-jira-fields-viewer
 
     steps:
       - name: Checkout repository
@@ -24,19 +61,7 @@ jobs:
         run: npm install -g @forge/cli
 
       - name: Install dependencies
-        run: |
-          cd atlassian-jira-fields-viewer
-          npm ci
-
-      - name: Run linter
-        run: |
-          cd atlassian-jira-fields-viewer
-          npm run lint
-
-      - name: Run tests
-        run: |
-          cd atlassian-jira-fields-viewer
-          npm run test
+        run: npm ci
 
       - name: Deploy Forge App
         run: |
@@ -55,5 +80,4 @@ jobs:
 
           echo "Deploying to Forge environment: $ENVIRONMENT"
 
-          cd atlassian-jira-fields-viewer
           forge deploy --non-interactive -e "$ENVIRONMENT"

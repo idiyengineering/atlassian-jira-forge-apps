@@ -135,7 +135,7 @@ export const App = () => {
     const optionCount = fieldState?.status === 'loaded' ? fieldState.options.length : null;
     const isLoading = !fieldState || fieldState?.status === 'loading';
     const isError = fieldState?.status === 'error';
-    const label = optionCount && optionCount > 0 ? `${fieldType} (${optionCount})` : fieldType;
+    const label = optionCount !== null ? `${fieldType} (${optionCount})` : fieldType;
     const text = isLoading
       ? `${label} (loading...)`
       : isError

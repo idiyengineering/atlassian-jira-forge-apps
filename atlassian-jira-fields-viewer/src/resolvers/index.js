@@ -41,6 +41,7 @@ resolver.define('getFieldOptions', async ({ payload }) => {
   }
 
   try {
+    console.log(`[getFieldOptions] fetching options for fieldId=${fieldId}`);
     const contextResponse = await api
       .asApp()
       .requestJira(route`/rest/api/3/field/${fieldId}/context?maxResults=50`, {
@@ -48,11 +49,16 @@ resolver.define('getFieldOptions', async ({ payload }) => {
       });
 
     if (contextResponse.ok === false) {
+      const responseText = await contextResponse.text();
+      console.error(
+        `[getFieldOptions] context request failed for fieldId=${fieldId} status=${contextResponse.status} body=${responseText}`
+      );
       return [];
     }
 
     const contextData = await contextResponse.json();
     const contexts = contextData?.values || [];
+    console.log(`[getFieldOptions] fieldId=${fieldId} contexts=${contexts.length}`);
     const optionValues = [];
 
     for (const context of contexts) {
@@ -68,6 +74,10 @@ resolver.define('getFieldOptions', async ({ payload }) => {
         });
 
       if (optionResponse.ok === false) {
+        const responseText = await optionResponse.text();
+        console.error(
+          `[getFieldOptions] option request failed for fieldId=${fieldId} contextId=${contextId} status=${optionResponse.status} body=${responseText}`
+        );
         continue;
       }
 
@@ -81,8 +91,11 @@ resolver.define('getFieldOptions', async ({ payload }) => {
       }
     }
 
-    return Array.from(new Set(optionValues)).sort((a, b) => a.localeCompare(b));
+    const result = Array.from(new Set(optionValues)).sort((a, b) => a.localeCompare(b));
+    console.log(`[getFieldOptions] fieldId=${fieldId} optionCount=${result.length}`);
+    return result;
   } catch (error) {
+    console.error(`[getFieldOptions] unexpected error for fieldId=${fieldId}: ${error?.message || error}`);
     return [];
   }
 });

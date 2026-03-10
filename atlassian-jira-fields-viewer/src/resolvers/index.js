@@ -41,12 +41,22 @@ resolver.define('getFieldOptions', async ({ payload }) => {
   }
 
   try {
+    const requestJiraWithFallback = async (path) => {
+      try {
+        return await api.asUser().requestJira(path, {
+          headers: { Accept: 'application/json' },
+        });
+      } catch (error) {
+        return api.asApp().requestJira(path, {
+          headers: { Accept: 'application/json' },
+        });
+      }
+    };
+
     console.log(`[getFieldOptions] fetching options for fieldId=${fieldId}`);
-    const contextResponse = await api
-      .asApp()
-      .requestJira(route`/rest/api/3/field/${fieldId}/context?maxResults=50`, {
-        headers: { Accept: 'application/json' },
-      });
+    const contextResponse = await requestJiraWithFallback(
+      route`/rest/api/3/field/${fieldId}/context?maxResults=50`
+    );
 
     if (contextResponse.ok === false) {
       const responseText = await contextResponse.text();
@@ -67,11 +77,9 @@ resolver.define('getFieldOptions', async ({ payload }) => {
         continue;
       }
 
-      const optionResponse = await api
-        .asApp()
-        .requestJira(route`/rest/api/3/field/${fieldId}/context/${contextId}/option?maxResults=100`, {
-          headers: { Accept: 'application/json' },
-        });
+      const optionResponse = await requestJiraWithFallback(
+        route`/rest/api/3/field/${fieldId}/context/${contextId}/option?maxResults=100`
+      );
 
       if (optionResponse.ok === false) {
         const responseText = await optionResponse.text();

@@ -6,6 +6,7 @@ vi.mock('@forge/api', () => ({
   __esModule: true,
   default: {
     asApp: vi.fn(),
+    asUser: vi.fn(),
   },
   route: vi.fn(),
 }));
@@ -44,6 +45,9 @@ describe('Resolvers', () => {
     // Setup the mock chain
     mockRequestJira = vi.fn();
     api.asApp = vi.fn().mockReturnValue({
+      requestJira: mockRequestJira,
+    });
+    api.asUser = vi.fn().mockReturnValue({
       requestJira: mockRequestJira,
     });
     

@@ -321,5 +321,38 @@ describe('Resolvers', () => {
 
       expect(result).toEqual(['Option A', 'Option B']);
     });
+
+    it('should use create metadata fallback when context endpoint returns 404', async () => {
+      mockRequestJira
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          text: async () => '{"errorMessages":["The custom field was not found."],"errors":{}}',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            projects: [
+              {
+                issuetypes: [
+                  {
+                    fields: {
+                      customfield_10124: {
+                        allowedValues: [{ value: 'Alpha' }, { value: 'Beta' }],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+      const result = await handler.getFieldOptions({
+        payload: { fieldId: 'customfield_10124', projectId: '10001' },
+      });
+
+      expect(result).toEqual(['Alpha', 'Beta']);
+    });
   });
 });

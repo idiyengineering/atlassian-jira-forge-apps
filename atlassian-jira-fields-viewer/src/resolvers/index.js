@@ -59,17 +59,17 @@ resolver.define('getFieldOptions', async ({ payload }) => {
       route`/rest/api/3/field/${fieldId}/context?maxResults=50`
     );
 
+    let contexts = [];
     if (contextResponse.ok === false) {
       const responseText = await contextResponse.text();
       console.error(
         `[getFieldOptions] context request failed for fieldId=${fieldId} status=${contextResponse.status} body=${responseText}`
       );
-      return [];
+    } else {
+      const contextData = await contextResponse.json();
+      contexts = contextData?.values || [];
+      console.log(`[getFieldOptions] fieldId=${fieldId} contexts=${contexts.length}`);
     }
-
-    const contextData = await contextResponse.json();
-    const contexts = contextData?.values || [];
-    console.log(`[getFieldOptions] fieldId=${fieldId} contexts=${contexts.length}`);
     const optionValues = [];
 
     for (const context of contexts) {

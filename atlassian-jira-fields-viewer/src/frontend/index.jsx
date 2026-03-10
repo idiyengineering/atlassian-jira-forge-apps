@@ -1,11 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { Label, DynamicTable, Textfield, Tabs, TabList, Tab, TabPanel, Box} from '@forge/react';
+import ForgeReconciler, {
+  Label,
+  DynamicTable,
+  Textfield,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  Box,
+  Tooltip,
+  Pressable,
+} from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 export const App = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [fieldOptionState, setFieldOptionState] = useState({});
 
   useEffect(() => {
     invoke('getAllFields')
@@ -33,6 +45,99 @@ export const App = () => {
     });
   };
 
+  const isOptionBasedField = (field) => {
+    const type = field?.schema?.type?.toLowerCase?.() || '';
+    const items = field?.schema?.items?.toLowerCase?.() || '';
+    const custom = field?.schema?.custom?.toLowerCase?.() || '';
+
+    return (
+      type === 'option' ||
+      items === 'option' ||
+      custom.includes('select') ||
+      custom.includes('checkbox') ||
+      custom.includes('radio') ||
+      custom.includes('cascading')
+    );
+  };
+
+  const getOptionsTooltipText = (fieldId) => {
+    const fieldState = fieldOptionState[fieldId];
+
+    if (!fieldState) {
+      return 'Hover for details, click to load field options';
+    }
+
+    if (fieldState.status === 'loading') {
+      return 'Loading options...';
+    }
+
+    if (fieldState.status === 'error') {
+      return 'Unable to load options';
+    }
+
+    if (fieldState.status === 'loaded') {
+      if (!fieldState.options.length) {
+        return 'No options found for this field';
+      }
+
+      const visibleOptions = fieldState.options.slice(0, 20);
+      const hiddenCount = fieldState.options.length - visibleOptions.length;
+      const optionText = visibleOptions.join(', ');
+
+      return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
+    }
+
+    return 'Click to load field options';
+  };
+
+  const getFieldTypeContent = (field) => {
+    const fieldType = field.schema?.type || 'N/A';
+    if (!isOptionBasedField(field)) {
+      return fieldType;
+    }
+
+    const fieldId = field?.id;
+    const fieldState = fieldOptionState[fieldId];
+    const optionCount = fieldState?.status === 'loaded' ? fieldState.options.length : null;
+    const label = optionCount && optionCount > 0 ? `${fieldType} (${optionCount})` : fieldType;
+
+    const loadOptions = async () => {
+      if (!fieldId) {
+        return;
+      }
+
+      if (fieldState?.status === 'loaded' || fieldState?.status === 'loading') {
+        return;
+      }
+
+      setFieldOptionState((prev) => ({
+        ...prev,
+        [fieldId]: { status: 'loading', options: [] },
+      }));
+
+      try {
+        const options = await invoke('getFieldOptions', { fieldId });
+        setFieldOptionState((prev) => ({
+          ...prev,
+          [fieldId]: { status: 'loaded', options: Array.isArray(options) ? options : [] },
+        }));
+      } catch (error) {
+        setFieldOptionState((prev) => ({
+          ...prev,
+          [fieldId]: { status: 'error', options: [] },
+        }));
+      }
+    };
+
+    return (
+      <Tooltip text={getOptionsTooltipText(fieldId)}>
+        <Pressable onPress={loadOptions} ariaLabel={`Load options for ${field.name || field.key || field.id}`}>
+          {label}
+        </Pressable>
+      </Tooltip>
+    );
+  };
+
   const mapFieldsToRows = (fields) => {
     return fields.map((field, index) => ({
       key: field.id || `row-${index}`,
@@ -40,7 +145,7 @@ export const App = () => {
         { key: 'number', content: index + 1 },
         { key: 'name', content: field.name },
         { key: 'key', content: field.key },
-        { key: 'type', content: field.schema?.type || 'N/A' },
+        { key: 'type', content: getFieldTypeContent(field) },
         { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
       ],
     }));

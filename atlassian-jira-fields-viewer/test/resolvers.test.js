@@ -47,7 +47,9 @@ describe('Resolvers', () => {
       requestJira: mockRequestJira,
     });
     
-    route.mockImplementation((strings, ...values) => strings.join(''));
+    route.mockImplementation((strings, ...values) =>
+      strings.reduce((acc, str, idx) => acc + str + (values[idx] ?? ''), '')
+    );
   });
 
   describe('getAllFields', () => {
@@ -242,6 +244,42 @@ describe('Resolvers', () => {
       result.forEach(field => {
         expect(field.projectName).toBe('Shared Project');
       });
+    });
+  });
+
+  describe('getFieldOptions', () => {
+    it('should return de-duplicated sorted options across contexts', async () => {
+      mockRequestJira
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ values: [{ id: '10' }, { id: '20' }] }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ values: [{ value: 'Beta' }, { value: 'Alpha' }] }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ values: [{ value: 'Alpha' }, { value: 'Gamma' }] }),
+        });
+
+      const result = await handler.getFieldOptions({ payload: { fieldId: 'customfield_10000' } });
+
+      expect(result).toEqual(['Alpha', 'Beta', 'Gamma']);
+      expect(mockRequestJira).toHaveBeenCalledTimes(3);
+    });
+
+    it('should return empty array when field id is missing', async () => {
+      const result = await handler.getFieldOptions({ payload: {} });
+      expect(result).toEqual([]);
+      expect(mockRequestJira).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array when Jira API throws', async () => {
+      mockRequestJira.mockRejectedValueOnce(new Error('Jira unavailable'));
+
+      const result = await handler.getFieldOptions({ payload: { fieldId: 'customfield_10001' } });
+      expect(result).toEqual([]);
     });
   });
 });

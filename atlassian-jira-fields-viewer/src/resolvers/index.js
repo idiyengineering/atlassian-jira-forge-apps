@@ -34,4 +34,57 @@ resolver.define('getAllFields', async () => {
   return enrichedFields;
 });
 
+resolver.define('getFieldOptions', async ({ payload }) => {
+  const fieldId = payload?.fieldId;
+  if (!fieldId) {
+    return [];
+  }
+
+  try {
+    const contextResponse = await api
+      .asApp()
+      .requestJira(route`/rest/api/3/field/${fieldId}/context?maxResults=50`, {
+        headers: { Accept: 'application/json' },
+      });
+
+    if (contextResponse.ok === false) {
+      return [];
+    }
+
+    const contextData = await contextResponse.json();
+    const contexts = contextData?.values || [];
+    const optionValues = [];
+
+    for (const context of contexts) {
+      const contextId = context?.id;
+      if (!contextId) {
+        continue;
+      }
+
+      const optionResponse = await api
+        .asApp()
+        .requestJira(route`/rest/api/3/field/${fieldId}/context/${contextId}/option?maxResults=100`, {
+          headers: { Accept: 'application/json' },
+        });
+
+      if (optionResponse.ok === false) {
+        continue;
+      }
+
+      const optionData = await optionResponse.json();
+      const contextOptions = optionData?.values || [];
+
+      for (const option of contextOptions) {
+        if (option?.value) {
+          optionValues.push(option.value);
+        }
+      }
+    }
+
+    return Array.from(new Set(optionValues)).sort((a, b) => a.localeCompare(b));
+  } catch (error) {
+    return [];
+  }
+});
+
 export const handler = resolver.getDefinitions();

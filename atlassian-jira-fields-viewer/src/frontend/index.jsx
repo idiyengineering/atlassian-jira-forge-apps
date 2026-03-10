@@ -30,6 +30,7 @@ export const App = () => {
       { key: 'name', content: 'Field Name' },
       { key: 'key', content: 'Field ID' },
       { key: 'type', content: 'Field Type' },
+      { key: 'options', content: 'Options' },
       { key: 'projectName', content: 'Project Name' },
     ],
   };
@@ -149,6 +150,36 @@ export const App = () => {
     );
   };
 
+  const getFieldOptionsContent = (field) => {
+    if (!isOptionBasedField(field)) {
+      return '-';
+    }
+
+    const fieldId = field?.id;
+    const fieldState = fieldOptionState[fieldId];
+
+    if (!fieldState || fieldState.status === 'loading') {
+      return 'Loading options...';
+    }
+
+    if (fieldState.status === 'error') {
+      return 'Options unavailable';
+    }
+
+    if (fieldState.status === 'loaded') {
+      if (!fieldState.options.length) {
+        return 'No options';
+      }
+
+      const visible = fieldState.options.slice(0, 3);
+      const hiddenCount = fieldState.options.length - visible.length;
+      const preview = visible.join(', ');
+      return hiddenCount > 0 ? `${preview} (+${hiddenCount} more)` : preview;
+    }
+
+    return 'Loading options...';
+  };
+
   const mapFieldsToRows = (fields) => {
     return fields.map((field, index) => ({
       key: field.id || `row-${index}`,
@@ -157,6 +188,7 @@ export const App = () => {
         { key: 'name', content: field.name },
         { key: 'key', content: field.key },
         { key: 'type', content: getFieldTypeContent(field) },
+        { key: 'options', content: getFieldOptionsContent(field) },
         { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
       ],
     }));

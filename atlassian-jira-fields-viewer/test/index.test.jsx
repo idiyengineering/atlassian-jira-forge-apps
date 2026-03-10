@@ -269,6 +269,7 @@ describe('Jira Fields Viewer App', () => {
         expect(screen.getAllByText('Field Name').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Field ID').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Field Type').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Options').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Project Name').length).toBeGreaterThan(0);
       });
     });
@@ -336,6 +337,7 @@ describe('Jira Fields Viewer App', () => {
 
       await waitFor(() => {
         expect(screen.getByText('option (3)')).toBeInTheDocument();
+        expect(screen.getByText('Low, Medium, High')).toBeInTheDocument();
       });
 
       expect(invoke).toHaveBeenCalledWith('getFieldOptions', { fieldId: 'customfield_10010' });

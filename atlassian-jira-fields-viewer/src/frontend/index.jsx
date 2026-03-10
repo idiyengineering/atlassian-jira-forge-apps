@@ -9,7 +9,7 @@ import ForgeReconciler, {
   TabPanel,
   Box,
   Tooltip,
-  Pressable,
+  Button,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
@@ -100,6 +100,15 @@ export const App = () => {
     const fieldState = fieldOptionState[fieldId];
     const optionCount = fieldState?.status === 'loaded' ? fieldState.options.length : null;
     const label = optionCount && optionCount > 0 ? `${fieldType} (${optionCount})` : fieldType;
+    const isLoading = fieldState?.status === 'loading';
+    const isError = fieldState?.status === 'error';
+    const buttonText = isLoading
+      ? `${label} (loading...)`
+      : isError
+        ? `${label} (retry)`
+        : optionCount === null
+          ? `${label} (show options)`
+          : label;
 
     const loadOptions = async () => {
       if (!fieldId) {
@@ -131,9 +140,12 @@ export const App = () => {
 
     return (
       <Tooltip text={getOptionsTooltipText(fieldId)}>
-        <Pressable onPress={loadOptions} ariaLabel={`Load options for ${field.name || field.key || field.id}`}>
-          {label}
-        </Pressable>
+        <Button
+          text={buttonText}
+          appearance="subtle"
+          onClick={loadOptions}
+          disabled={isLoading}
+        />
       </Tooltip>
     );
   };

@@ -6,7 +6,6 @@ vi.mock('@forge/api', () => ({
   __esModule: true,
   default: {
     asApp: vi.fn(),
-    asUser: vi.fn(),
   },
   route: vi.fn(),
 }));
@@ -45,9 +44,6 @@ describe('Resolvers', () => {
     // Setup the mock chain
     mockRequestJira = vi.fn();
     api.asApp = vi.fn().mockReturnValue({
-      requestJira: mockRequestJira,
-    });
-    api.asUser = vi.fn().mockReturnValue({
       requestJira: mockRequestJira,
     });
     
@@ -252,20 +248,56 @@ describe('Resolvers', () => {
   });
 
   describe('getFieldOptions', () => {
+    const okJsonResponse = (body) => ({
+      ok: true,
+      json: async () => body,
+    });
+
+    const contextResponse = (...ids) => okJsonResponse({ values: ids.map((id) => ({ id })) });
+
+    const optionResponse = (...values) => {
+      return okJsonResponse({ values: values.map((value) => ({ value })) });
+    };
+
+    const createMetaResponse = (fieldId, ...values) => {
+      return okJsonResponse({
+        projects: [
+          {
+            issuetypes: [
+              {
+                fields: {
+                  [fieldId]: {
+                    allowedValues: values.map((value) => ({ value })),
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      });
+    };
+
+    const fieldNotFoundResponse = () => ({
+      ok: false,
+      status: 404,
+      text: async () => '{"errorMessages":["The custom field was not found."],"errors":{}}',
+    });
+
+    it('should request Jira with app context', async () => {
+      mockRequestJira.mockResolvedValueOnce(contextResponse());
+
+      const result = await handler.getFieldOptions({ payload: { fieldId: 'customfield_10000' } });
+
+      expect(result).toEqual([]);
+      expect(api.asApp).toHaveBeenCalled();
+      expect(mockRequestJira).toHaveBeenCalledTimes(1);
+    });
+
     it('should return de-duplicated sorted options across contexts', async () => {
       mockRequestJira
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ values: [{ id: '10' }, { id: '20' }] }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ values: [{ value: 'Beta' }, { value: 'Alpha' }] }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ values: [{ value: 'Alpha' }, { value: 'Gamma' }] }),
-        });
+        .mockResolvedValueOnce(contextResponse('10', '20'))
+        .mockResolvedValueOnce(optionResponse('Beta', 'Alpha'))
+        .mockResolvedValueOnce(optionResponse('Alpha', 'Gamma'));
 
       const result = await handler.getFieldOptions({ payload: { fieldId: 'customfield_10000' } });
 
@@ -288,32 +320,9 @@ describe('Resolvers', () => {
 
     it('should use create metadata fallback when context options are empty', async () => {
       mockRequestJira
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ values: [{ id: '10' }] }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ values: [] }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            projects: [
-              {
-                issuetypes: [
-                  {
-                    fields: {
-                      customfield_10124: {
-                        allowedValues: [{ value: 'Option A' }, { value: 'Option B' }],
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          }),
-        });
+        .mockResolvedValueOnce(contextResponse('10'))
+        .mockResolvedValueOnce(optionResponse())
+        .mockResolvedValueOnce(createMetaResponse('customfield_10124', 'Option A', 'Option B'));
 
       const result = await handler.getFieldOptions({
         payload: { fieldId: 'customfield_10124', projectId: '10001' },
@@ -324,29 +333,8 @@ describe('Resolvers', () => {
 
     it('should use create metadata fallback when context endpoint returns 404', async () => {
       mockRequestJira
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 404,
-          text: async () => '{"errorMessages":["The custom field was not found."],"errors":{}}',
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            projects: [
-              {
-                issuetypes: [
-                  {
-                    fields: {
-                      customfield_10124: {
-                        allowedValues: [{ value: 'Alpha' }, { value: 'Beta' }],
-                      },
-                    },
-                  },
-                ],
-              },
-            ],
-          }),
-        });
+        .mockResolvedValueOnce(fieldNotFoundResponse())
+        .mockResolvedValueOnce(createMetaResponse('customfield_10124', 'Alpha', 'Beta'));
 
       const result = await handler.getFieldOptions({
         payload: { fieldId: 'customfield_10124', projectId: '10001' },

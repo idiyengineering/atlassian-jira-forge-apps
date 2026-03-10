@@ -12,6 +12,24 @@ import ForgeReconciler, {
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
+const fetchFieldOptionEntry = async (field) => {
+  const fieldId = field.id;
+  try {
+    const options = await invoke('getFieldOptions', {
+      fieldId,
+      projectId: field?.scope?.project?.id,
+    });
+    return [fieldId, { status: 'loaded', options: Array.isArray(options) ? options : [] }];
+  } catch {
+    return [fieldId, { status: 'error', options: [] }];
+  }
+};
+
+const fetchMissingFieldOptions = async (missingFields) => {
+  const results = await Promise.all(missingFields.map(fetchFieldOptionEntry));
+  return Object.fromEntries(results);
+};
+
 export const App = () => {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,137 +79,108 @@ export const App = () => {
   };
 
   useEffect(() => {
-    const optionFields = fields.filter(isOptionBasedField);
+    const optionFields = fields.filter(isOptionBasedField).filter((field) => field?.id);
+    const missingFields = optionFields.filter((field) => !fieldOptionState[field.id]);
 
-    optionFields.forEach((field) => {
-      const fieldId = field?.id;
-      if (!fieldId) {
+    if (!missingFields.length) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadingStateByFieldId = Object.fromEntries(
+      missingFields.map((field) => [field.id, { status: 'loading', options: [] }])
+    );
+    setFieldOptionState((prev) => ({
+      ...prev,
+      ...loadingStateByFieldId,
+    }));
+
+    fetchMissingFieldOptions(missingFields).then((resolvedFieldOptionState) => {
+      if (isCancelled) {
         return;
       }
 
-      setFieldOptionState((prev) => {
-        if (prev[fieldId]) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [fieldId]: { status: 'loading', options: [] },
-        };
-      });
-
-      invoke('getFieldOptions', { fieldId, projectId: field?.scope?.project?.id })
-        .then((options) => {
-          setFieldOptionState((prev) => ({
-            ...prev,
-            [fieldId]: { status: 'loaded', options: Array.isArray(options) ? options : [] },
-          }));
-        })
-        .catch(() => {
-          setFieldOptionState((prev) => ({
-            ...prev,
-            [fieldId]: { status: 'error', options: [] },
-          }));
-        });
+      setFieldOptionState((prev) => ({
+        ...prev,
+        ...resolvedFieldOptionState,
+      }));
     });
-  }, [fields]);
 
-  const getOptionsTooltipText = (fieldId) => {
-    const fieldState = fieldOptionState[fieldId];
+    return () => {
+      isCancelled = true;
+    };
+  }, [fields, fieldOptionState]);
 
-    if (!fieldState) {
-      return 'Loading options...';
+  const formatOptionValues = (options, limit) => {
+    if (!options.length) {
+      return null;
     }
 
-    if (fieldState.status === 'loading') {
-      return 'Loading options...';
-    }
-
-    if (fieldState.status === 'error') {
-      return 'Unable to load options';
-    }
-
-    if (fieldState.status === 'loaded') {
-      if (!fieldState.options.length) {
-        return 'No options found for this field';
-      }
-
-      const visibleOptions = fieldState.options.slice(0, 20);
-      const hiddenCount = fieldState.options.length - visibleOptions.length;
-      const optionText = visibleOptions.join(', ');
-
-      return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
-    }
-
-    return 'Loading options...';
+    const visibleOptions = options.slice(0, limit);
+    const hiddenCount = options.length - visibleOptions.length;
+    const optionText = visibleOptions.join(', ');
+    return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
   };
 
-  const getFieldTypeContent = (field) => {
+  const getOptionDisplayModel = (field) => {
+    if (!isOptionBasedField(field)) {
+      return null;
+    }
+
     const fieldType = field.schema?.type || 'N/A';
-    if (!isOptionBasedField(field)) {
-      return fieldType;
+    const fieldState = fieldOptionState[field?.id];
+
+    if (fieldState && fieldState.status === 'error') {
+      return {
+        typeText: `${fieldType} (options unavailable)`,
+        optionsText: 'Options unavailable',
+        tooltipText: 'Unable to load options',
+      };
     }
 
-    const fieldId = field?.id;
-    const fieldState = fieldOptionState[fieldId];
-    const optionCount = fieldState?.status === 'loaded' ? fieldState.options.length : null;
-    const isLoading = !fieldState || fieldState?.status === 'loading';
-    const isError = fieldState?.status === 'error';
-    const label = optionCount !== null ? `${fieldType} (${optionCount})` : fieldType;
-    const text = isLoading
-      ? `${label} (loading...)`
-      : isError
-        ? `${label} (options unavailable)`
-        : label;
+    if (fieldState && fieldState.status === 'loaded') {
+      const options = fieldState.options || [];
+      const optionCount = options.length;
 
-    return (
-      <Tooltip text={getOptionsTooltipText(fieldId)}>
-        {text}
-      </Tooltip>
-    );
-  };
-
-  const getFieldOptionsContent = (field) => {
-    if (!isOptionBasedField(field)) {
-      return '-';
+      return {
+        typeText: `${fieldType} (${optionCount})`,
+        optionsText: formatOptionValues(options, 3) || 'No options',
+        tooltipText: formatOptionValues(options, 20) || 'No options found for this field',
+      };
     }
 
-    const fieldId = field?.id;
-    const fieldState = fieldOptionState[fieldId];
-
-    if (!fieldState || fieldState.status === 'loading') {
-      return 'Loading options...';
-    }
-
-    if (fieldState.status === 'error') {
-      return 'Options unavailable';
-    }
-
-    if (fieldState.status === 'loaded') {
-      if (!fieldState.options.length) {
-        return 'No options';
-      }
-
-      const visible = fieldState.options.slice(0, 3);
-      const hiddenCount = fieldState.options.length - visible.length;
-      const preview = visible.join(', ');
-      return hiddenCount > 0 ? `${preview} (+${hiddenCount} more)` : preview;
-    }
-
-    return 'Loading options...';
+    return {
+      typeText: `${fieldType} (loading...)`,
+      optionsText: 'Loading options...',
+      tooltipText: 'Loading options...',
+    };
   };
 
   const mapFieldsToRows = (fields) => {
-    return fields.map((field, index) => ({
-      key: field.id || `row-${index}`,
-      cells: [
-        { key: 'number', content: index + 1 },
-        { key: 'name', content: field.name },
-        { key: 'key', content: field.key },
-        { key: 'type', content: getFieldTypeContent(field) },
-        { key: 'options', content: getFieldOptionsContent(field) },
-        { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
-      ],
-    }));
+    return fields.map((field, index) => {
+      const optionDisplayModel = getOptionDisplayModel(field);
+      return {
+        key: field.id || `row-${index}`,
+        cells: [
+          { key: 'number', content: index + 1 },
+          { key: 'name', content: field.name },
+          { key: 'key', content: field.key },
+          {
+            key: 'type',
+            content: optionDisplayModel ? (
+              <Tooltip text={optionDisplayModel.tooltipText}>
+                {optionDisplayModel.typeText}
+              </Tooltip>
+            ) : (
+              field.schema?.type || 'N/A'
+            ),
+          },
+          { key: 'options', content: optionDisplayModel?.optionsText || '-' },
+          { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
+        ],
+      };
+    });
   };
 
   const getDuplicateFields = (fields) => {

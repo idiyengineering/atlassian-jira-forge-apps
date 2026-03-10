@@ -53,7 +53,7 @@ vi.mock('@forge/react', () => ({
   Tab: ({ children }) => <button data-testid="tab">{children}</button>,
   TabPanel: ({ children }) => <div data-testid="tab-panel">{children}</div>,
   Box: ({ children, padding }) => <div data-testid="box" data-padding={padding}>{children}</div>,
-  Tooltip: ({ text, children }) => <span data-tooltip={text}>{children}</span>,
+  Tooltip: React.Fragment,
 }));
 
 // Import the App component
@@ -344,6 +344,36 @@ describe('Jira Fields Viewer App', () => {
         'getFieldOptions',
         expect.objectContaining({ fieldId: 'customfield_10010' })
       );
+    });
+
+    test('should show unavailable state when selectable field options fail to load', async () => {
+      const selectableFields = [
+        {
+          id: 'customfield_10010',
+          name: 'Risk Level',
+          key: 'customfield_10010',
+          schema: { type: 'option', custom: 'com.atlassian.jira.plugin.system.customfieldtypes:select' },
+        },
+      ];
+
+      invoke.mockImplementation((fnName) => {
+        if (fnName === 'getAllFields') {
+          return Promise.resolve(selectableFields);
+        }
+
+        if (fnName === 'getFieldOptions') {
+          return Promise.reject(new Error('Failed to load options'));
+        }
+
+        return Promise.resolve([]);
+      });
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText('option (options unavailable)')).toBeInTheDocument();
+        expect(screen.getByText('Options unavailable')).toBeInTheDocument();
+      });
     });
   });
 });

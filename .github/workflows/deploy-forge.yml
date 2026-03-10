@@ -2,10 +2,9 @@ name: Deploy Atlassian Forge App
 
 on:
   push:
-    branches: [ '**' ]
+    branches: [ 'main', 'develop' ]
   pull_request:
-    branches: [ '**' ]
-  workflow_dispatch: # allows manual runs from the GitHub UI
+    branches: [ 'main', 'develop' ]
 
 jobs:
   ci:
@@ -82,4 +81,15 @@ jobs:
 
           echo "Deploying to Forge environment: $ENVIRONMENT"
 
-          forge deploy --non-interactive -e "$ENVIRONMENT"
+          ATTEMPT=1
+          MAX_ATTEMPTS=4
+          until forge deploy --non-interactive -e "$ENVIRONMENT"; do
+            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+              echo "Forge deploy failed after $MAX_ATTEMPTS attempts."
+              exit 1
+            fi
+            SLEEP_SECONDS=$((ATTEMPT * 20))
+            echo "Forge environment appears busy. Retrying in ${SLEEP_SECONDS}s..."
+            sleep "$SLEEP_SECONDS"
+            ATTEMPT=$((ATTEMPT + 1))
+          done

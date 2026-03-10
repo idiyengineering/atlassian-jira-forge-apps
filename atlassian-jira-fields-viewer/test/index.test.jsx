@@ -53,6 +53,12 @@ vi.mock('@forge/react', () => ({
   Tab: ({ children }) => <button data-testid="tab">{children}</button>,
   TabPanel: ({ children }) => <div data-testid="tab-panel">{children}</div>,
   Box: ({ children, padding }) => <div data-testid="box" data-padding={padding}>{children}</div>,
+  Tooltip: ({ text, children }) => <span data-tooltip={text}>{children}</span>,
+  Pressable: ({ onPress, ariaLabel, children }) => (
+    <button type="button" aria-label={ariaLabel} onClick={onPress}>
+      {children}
+    </button>
+  ),
 }));
 
 // Import the App component
@@ -307,6 +313,40 @@ describe('Jira Fields Viewer App', () => {
       await waitFor(() => {
         expect(screen.getByText('Company Managed Fields')).toBeInTheDocument();
       });
+    });
+
+    test('should load and display option count for selectable fields', async () => {
+      const selectableFields = [
+        {
+          id: 'customfield_10010',
+          name: 'Risk Level',
+          key: 'customfield_10010',
+          schema: { type: 'option', custom: 'com.atlassian.jira.plugin.system.customfieldtypes:select' },
+        },
+      ];
+
+      invoke.mockImplementation((fnName) => {
+        if (fnName === 'getAllFields') {
+          return Promise.resolve(selectableFields);
+        }
+
+        if (fnName === 'getFieldOptions') {
+          return Promise.resolve(['Low', 'Medium', 'High']);
+        }
+
+        return Promise.resolve([]);
+      });
+
+      render(<App />);
+
+      const loadButton = await screen.findByRole('button', { name: 'Load options for Risk Level' });
+      fireEvent.click(loadButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('option (3)')).toBeInTheDocument();
+      });
+
+      expect(invoke).toHaveBeenCalledWith('getFieldOptions', { fieldId: 'customfield_10010' });
     });
   });
 });

@@ -25,3 +25,4 @@ permissions:
   #https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
     - read:jira-work
     - read:field:jira
+    - read:field.option:jira

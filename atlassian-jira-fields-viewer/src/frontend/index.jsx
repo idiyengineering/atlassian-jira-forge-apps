@@ -131,7 +131,7 @@ export const App = () => {
     const fieldType = field.schema?.type || 'N/A';
     const fieldState = fieldOptionState[field?.id];
 
-    if (fieldState && fieldState.status === 'error') {
+    if (fieldState?.status === 'error') {
       return {
         typeText: `${fieldType} (options unavailable)`,
         optionsText: 'Options unavailable',
@@ -139,7 +139,7 @@ export const App = () => {
       };
     }
 
-    if (fieldState && fieldState.status === 'loaded') {
+    if (fieldState?.status === 'loaded') {
       const options = fieldState.options || [];
       const optionCount = options.length;
 

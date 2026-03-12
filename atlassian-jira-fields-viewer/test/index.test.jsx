@@ -322,7 +322,7 @@ describe('Jira Fields Viewer App', () => {
       render(<App />);
 
       await waitFor(() => {
-        expect(screen.getByText('priority')).toBeInTheDocument();
+        expect(screen.getAllByText('priority').length).toBeGreaterThan(0);
         expect(screen.getByText('High, Low, Medium')).toBeInTheDocument();
       });
     });

@@ -258,6 +258,15 @@ describe('Resolvers', () => {
       json: async () => body,
     });
 
+    const retryableResponse = (status) => ({
+      ok: false,
+      status,
+      headers: {
+        get: () => '0',
+      },
+      text: async () => `retryable ${status}`,
+    });
+
     it('should enrich option-based fields with de-duplicated sorted options', async () => {
       const fields = [
         {
@@ -321,6 +330,56 @@ describe('Resolvers', () => {
         status: 'loaded',
         options: ['Option A', 'Option B'],
       });
+    });
+
+    it('should retry when context request returns 429', async () => {
+      const fields = [
+        {
+          id: 'customfield_10000',
+          name: 'Priority',
+          schema: { type: 'option' },
+        },
+      ];
+
+      mockRequestJira
+        .mockResolvedValueOnce(okJsonResponse(fields))
+        .mockResolvedValueOnce(okJsonResponse([]))
+        .mockResolvedValueOnce(retryableResponse(429))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ id: '10' }] }))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ value: 'Alpha' }] }));
+
+      const result = await handler.getAllFields();
+
+      expect(result[0].optionInfo).toEqual({
+        status: 'loaded',
+        options: ['Alpha'],
+      });
+      expect(mockRequestJira).toHaveBeenCalledTimes(5);
+    });
+
+    it('should retry when option request returns 503', async () => {
+      const fields = [
+        {
+          id: 'customfield_10000',
+          name: 'Priority',
+          schema: { type: 'option' },
+        },
+      ];
+
+      mockRequestJira
+        .mockResolvedValueOnce(okJsonResponse(fields))
+        .mockResolvedValueOnce(okJsonResponse([]))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ id: '10' }] }))
+        .mockResolvedValueOnce(retryableResponse(503))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ value: 'Alpha' }] }));
+
+      const result = await handler.getAllFields();
+
+      expect(result[0].optionInfo).toEqual({
+        status: 'loaded',
+        options: ['Alpha'],
+      });
+      expect(mockRequestJira).toHaveBeenCalledTimes(5);
     });
   });
 });

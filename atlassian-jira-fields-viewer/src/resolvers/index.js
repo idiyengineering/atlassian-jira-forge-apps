@@ -3,9 +3,64 @@ import api, { route } from '@forge/api';
 
 const resolver = new Resolver();
 const JSON_HEADERS = { Accept: 'application/json' };
+const RETRYABLE_STATUSES = new Set([429, 503]);
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 250;
+const MAX_CONCURRENCY = 5;
 
-const requestJiraAsApp = (path) => {
-  return api.asApp().requestJira(path, { headers: JSON_HEADERS });
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getRetryDelayMs = (response, attempt) => {
+  const retryAfter = response?.headers?.get?.('retry-after');
+  const retryAfterSeconds = Number.parseInt(retryAfter, 10);
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
+    return retryAfterSeconds * 1000;
+  }
+
+  return INITIAL_RETRY_DELAY_MS * (2 ** attempt);
+};
+
+const requestJiraAsApp = async (path) => {
+  let lastResponse = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    const response = await api.asApp().requestJira(path, { headers: JSON_HEADERS });
+    lastResponse = response;
+
+    if (response.ok || !RETRYABLE_STATUSES.has(response.status) || attempt === MAX_RETRIES) {
+      return response;
+    }
+
+    const delayMs = getRetryDelayMs(response, attempt);
+    console.warn(
+      `[requestJiraAsApp] retrying status=${response.status} attempt=${attempt + 1} delayMs=${delayMs}`
+    );
+    await wait(delayMs);
+  }
+
+  return lastResponse;
+};
+
+const mapWithConcurrency = async (items, worker, maxConcurrency = MAX_CONCURRENCY) => {
+  const results = new Array(items.length);
+  let index = 0;
+
+  const runNext = async () => {
+    const currentIndex = index;
+    if (currentIndex >= items.length) {
+      return;
+    }
+    index += 1;
+    results[currentIndex] = await worker(items[currentIndex], currentIndex);
+    await runNext();
+  };
+
+  const workers = Array.from(
+    { length: Math.min(maxConcurrency, items.length) },
+    () => runNext()
+  );
+  await Promise.all(workers);
+  return results;
 };
 
 const getResponseBodySafely = async (response) => {
@@ -76,19 +131,17 @@ const fetchOptionsForContext = async (fieldId, contextId) => {
 };
 
 const fetchOptionsFromContexts = async (fieldId, contexts) => {
-  const optionValues = [];
-
-  for (const context of contexts) {
-    const contextId = context?.id;
-    if (!contextId) {
-      continue;
-    }
-
-    const values = await fetchOptionsForContext(fieldId, contextId);
-    optionValues.push(...values);
+  const contextIds = contexts.map((context) => context?.id).filter(Boolean);
+  if (!contextIds.length) {
+    return [];
   }
 
-  return getUniqueSortedOptions(optionValues);
+  const optionGroups = await mapWithConcurrency(
+    contextIds,
+    (contextId) => fetchOptionsForContext(fieldId, contextId)
+  );
+
+  return getUniqueSortedOptions(optionGroups.flat());
 };
 
 const fetchOptionsFromCreateMeta = async (fieldId, projectId) => {
@@ -129,7 +182,7 @@ const fetchFieldOptionInfo = async (field) => {
   const fieldId = field?.id;
   const projectId = field?.scope?.project?.id;
 
-  if (!fieldId || !isOptionBasedField(field)) {
+  if (!fieldId) {
     return null;
   }
 
@@ -163,12 +216,11 @@ resolver.define('getAllFields', async () => {
     projectMap[project.id] = project.name;
   }
 
-  const optionInfoByFieldId = {};
   const optionFields = fields.filter((field) => isOptionBasedField(field) && field?.id);
-
-  for (const field of optionFields) {
-    optionInfoByFieldId[field.id] = await fetchFieldOptionInfo(field);
-  }
+  const optionInfos = await mapWithConcurrency(optionFields, (field) => fetchFieldOptionInfo(field));
+  const optionInfoByFieldId = Object.fromEntries(
+    optionFields.map((field, idx) => [field.id, optionInfos[idx]])
+  );
 
   return fields.map((field) => {
     const projectId = field.scope?.project?.id;

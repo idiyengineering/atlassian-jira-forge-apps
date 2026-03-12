@@ -53,6 +53,7 @@ vi.mock('@forge/react', () => ({
   Tab: ({ children }) => <button data-testid="tab">{children}</button>,
   TabPanel: ({ children }) => <div data-testid="tab-panel">{children}</div>,
   Box: ({ children, padding }) => <div data-testid="box" data-padding={padding}>{children}</div>,
+  Tooltip: React.Fragment,
 }));
 
 // Import the App component
@@ -85,6 +86,10 @@ const mockFields = [
     name: 'Priority',
     key: 'priority',
     schema: { type: 'priority' },
+    optionInfo: {
+      status: 'loaded',
+      options: ['High', 'Low', 'Medium'],
+    },
   },
 ];
 
@@ -268,6 +273,7 @@ describe('Jira Fields Viewer App', () => {
         expect(screen.getAllByText('Field Name').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Field ID').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Field Type').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Options').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Project Name').length).toBeGreaterThan(0);
       });
     });
@@ -306,6 +312,17 @@ describe('Jira Fields Viewer App', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Company Managed Fields')).toBeInTheDocument();
+      });
+    });
+
+    test('should display option values for option-based fields', async () => {
+      invoke.mockResolvedValue(mockFields);
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText('priority (3)')).toBeInTheDocument();
+        expect(screen.getByText('High, Low, Medium')).toBeInTheDocument();
       });
     });
   });

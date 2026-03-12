@@ -47,7 +47,9 @@ describe('Resolvers', () => {
       requestJira: mockRequestJira,
     });
     
-    route.mockImplementation((strings, ...values) => strings.join(''));
+    route.mockImplementation((strings, ...values) =>
+      strings.reduce((acc, str, idx) => acc + str + (values[idx] ?? ''), '')
+    );
   });
 
   describe('getAllFields', () => {
@@ -99,17 +101,20 @@ describe('Resolvers', () => {
         name: 'Team Field',
         scope: { project: { id: '10001' } },
         projectName: 'Project Alpha',
+        optionInfo: null,
       });
       expect(result[1]).toEqual({
         id: 'field2',
         name: 'Global Field',
         projectName: null,
+        optionInfo: null,
       });
       expect(result[2]).toEqual({
         id: 'field3',
         name: 'Another Team Field',
         scope: { project: { id: '10002' } },
         projectName: 'Project Beta',
+        optionInfo: null,
       });
     });
 
@@ -142,6 +147,7 @@ describe('Resolvers', () => {
         name: 'Orphan Field',
         scope: { project: { id: '99999' } },
         projectName: 'Unknown Project',
+        optionInfo: null,
       });
     });
 
@@ -241,6 +247,79 @@ describe('Resolvers', () => {
       expect(result).toHaveLength(3);
       result.forEach(field => {
         expect(field.projectName).toBe('Shared Project');
+        expect(field.optionInfo).toBeNull();
+      });
+    });
+  });
+
+  describe('option enrichment in getAllFields', () => {
+    const okJsonResponse = (body) => ({
+      ok: true,
+      json: async () => body,
+    });
+
+    it('should enrich option-based fields with de-duplicated sorted options', async () => {
+      const fields = [
+        {
+          id: 'customfield_10000',
+          name: 'Priority',
+          schema: { type: 'option' },
+        },
+      ];
+      const projects = [];
+
+      mockRequestJira
+        .mockResolvedValueOnce(okJsonResponse(fields))
+        .mockResolvedValueOnce(okJsonResponse(projects))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ id: '10' }, { id: '20' }] }))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ value: 'Beta' }, { value: 'Alpha' }] }))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ value: 'Alpha' }, { value: 'Gamma' }] }));
+
+      const result = await handler.getAllFields();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].optionInfo).toEqual({
+        status: 'loaded',
+        options: ['Alpha', 'Beta', 'Gamma'],
+      });
+    });
+
+    it('should fallback to create metadata when context options are empty', async () => {
+      const fields = [
+        {
+          id: 'customfield_10124',
+          name: 'Team Select',
+          schema: { type: 'option' },
+          scope: { project: { id: '10001' } },
+        },
+      ];
+      const projects = [{ id: '10001', name: 'Team Project' }];
+
+      mockRequestJira
+        .mockResolvedValueOnce(okJsonResponse(fields))
+        .mockResolvedValueOnce(okJsonResponse(projects))
+        .mockResolvedValueOnce(okJsonResponse({ values: [{ id: '10' }] }))
+        .mockResolvedValueOnce(okJsonResponse({ values: [] }))
+        .mockResolvedValueOnce(okJsonResponse({
+          projects: [
+            {
+              issuetypes: [
+                {
+                  fields: {
+                    customfield_10124: {
+                      allowedValues: [{ value: 'Option B' }, { value: 'Option A' }],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        }));
+
+      const result = await handler.getAllFields();
+      expect(result[0].optionInfo).toEqual({
+        status: 'loaded',
+        options: ['Option A', 'Option B'],
       });
     });
   });

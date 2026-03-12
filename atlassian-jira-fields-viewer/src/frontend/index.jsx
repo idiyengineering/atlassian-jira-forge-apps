@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import ForgeReconciler, { Label, DynamicTable, Textfield, Tabs, TabList, Tab, TabPanel, Box} from '@forge/react';
+import ForgeReconciler, {
+  Label,
+  DynamicTable,
+  Textfield,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  Box,
+  Tooltip,
+} from '@forge/react';
 import { invoke } from '@forge/bridge';
 
 export const App = () => {
@@ -19,11 +29,10 @@ export const App = () => {
       { key: 'name', content: 'Field Name' },
       { key: 'key', content: 'Field ID' },
       { key: 'type', content: 'Field Type' },
+      { key: 'options', content: 'Options' },
       { key: 'projectName', content: 'Project Name' },
     ],
   };
-
-  // --- 🔁 Common Utility Functions ---
 
   const sortFieldsByName = (fields) => {
     return [...fields].sort((a, b) => {
@@ -33,17 +42,64 @@ export const App = () => {
     });
   };
 
+  const formatOptionValues = (options, limit) => {
+    if (!options.length) {
+      return null;
+    }
+
+    const visibleOptions = options.slice(0, limit);
+    const hiddenCount = options.length - visibleOptions.length;
+    const optionText = visibleOptions.join(', ');
+    return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
+  };
+
+  const getOptionDisplayModel = (field) => {
+    if (!field?.optionInfo) {
+      return null;
+    }
+
+    const fieldType = field.schema?.type || 'N/A';
+    if (field.optionInfo.status === 'error') {
+      return {
+        typeText: `${fieldType} (options unavailable)`,
+        optionsText: 'Options unavailable',
+        tooltipText: 'Unable to load options',
+      };
+    }
+
+    const options = field.optionInfo.options || [];
+    const optionCount = options.length;
+    return {
+      typeText: `${fieldType} (${optionCount})`,
+      optionsText: formatOptionValues(options, 3) || 'No options',
+      tooltipText: formatOptionValues(options, 20) || 'No options found for this field',
+    };
+  };
+
   const mapFieldsToRows = (fields) => {
-    return fields.map((field, index) => ({
-      key: field.id || `row-${index}`,
-      cells: [
-        { key: 'number', content: index + 1 },
-        { key: 'name', content: field.name },
-        { key: 'key', content: field.key },
-        { key: 'type', content: field.schema?.type || 'N/A' },
-        { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
-      ],
-    }));
+    return fields.map((field, index) => {
+      const optionDisplayModel = getOptionDisplayModel(field);
+      return {
+        key: field.id || `row-${index}`,
+        cells: [
+          { key: 'number', content: index + 1 },
+          { key: 'name', content: field.name },
+          { key: 'key', content: field.key },
+          {
+            key: 'type',
+            content: optionDisplayModel ? (
+              <Tooltip text={optionDisplayModel.tooltipText}>
+                {optionDisplayModel.typeText}
+              </Tooltip>
+            ) : (
+              field.schema?.type || 'N/A'
+            ),
+          },
+          { key: 'options', content: optionDisplayModel?.optionsText || '-' },
+          { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
+        ],
+      };
+    });
   };
 
   const getDuplicateFields = (fields) => {
@@ -62,8 +118,6 @@ export const App = () => {
     return fields.filter(field => duplicateNames.has(field.name));
   };
 
-  // --- 📦 Field Processing ---
-
   const filteredFields = fields.filter(field =>
     field.name?.toLowerCase().includes(filter.toLowerCase())
   );
@@ -74,7 +128,6 @@ export const App = () => {
   const sortedDuplicateFields = sortFieldsByName(getDuplicateFields(fields));
   const duplicateRows = mapFieldsToRows(sortedDuplicateFields);
 
-  // --- 💡 UI Rendering ---
   return (
     <>
       <Tabs id="default">

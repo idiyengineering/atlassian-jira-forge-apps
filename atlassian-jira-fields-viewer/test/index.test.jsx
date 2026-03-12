@@ -54,6 +54,7 @@ vi.mock('@forge/react', () => ({
   TabPanel: ({ children }) => <div data-testid="tab-panel">{children}</div>,
   Box: ({ children, padding }) => <div data-testid="box" data-padding={padding}>{children}</div>,
   Tooltip: React.Fragment,
+  Text: ({ children }) => <span>{children}</span>,
 }));
 
 // Import the App component
@@ -321,7 +322,7 @@ describe('Jira Fields Viewer App', () => {
       render(<App />);
 
       await waitFor(() => {
-        expect(screen.getByText('priority (3)')).toBeInTheDocument();
+        expect(screen.getByText('priority')).toBeInTheDocument();
         expect(screen.getByText('High, Low, Medium')).toBeInTheDocument();
       });
     });

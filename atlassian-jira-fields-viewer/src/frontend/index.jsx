@@ -9,6 +9,7 @@ import ForgeReconciler, {
   TabPanel,
   Box,
   Tooltip,
+  Text,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
@@ -42,15 +43,12 @@ export const App = () => {
     });
   };
 
-  const formatOptionValues = (options, limit) => {
+  const formatOptionValues = (options) => {
     if (!options.length) {
       return null;
     }
 
-    const visibleOptions = options.slice(0, limit);
-    const hiddenCount = options.length - visibleOptions.length;
-    const optionText = visibleOptions.join(', ');
-    return hiddenCount > 0 ? `${optionText} (+${hiddenCount} more)` : optionText;
+    return options.join(', ');
   };
 
   const getOptionDisplayModel = (field) => {
@@ -61,18 +59,17 @@ export const App = () => {
     const fieldType = field.schema?.type || 'N/A';
     if (field.optionInfo.status === 'error') {
       return {
-        typeText: `${fieldType} (options unavailable)`,
+        typeText: fieldType,
         optionsText: 'Options unavailable',
         tooltipText: 'Unable to load options',
       };
     }
 
     const options = field.optionInfo.options || [];
-    const optionCount = options.length;
     return {
-      typeText: `${fieldType} (${optionCount})`,
-      optionsText: formatOptionValues(options, 3) || 'No options',
-      tooltipText: formatOptionValues(options, 20) || 'No options found for this field',
+      typeText: fieldType,
+      optionsText: formatOptionValues(options) || 'No options',
+      tooltipText: formatOptionValues(options) || 'No options found for this field',
     };
   };
 
@@ -95,7 +92,10 @@ export const App = () => {
               field.schema?.type || 'N/A'
             ),
           },
-          { key: 'options', content: optionDisplayModel?.optionsText || '-' },
+          {
+            key: 'options',
+            content: <Text size="small">{optionDisplayModel?.optionsText || '-'}</Text>,
+          },
           { key: 'projectName', content: field.projectName || 'Company Managed Fields' },
         ],
       };

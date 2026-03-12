@@ -101,6 +101,10 @@ const fetchFieldContexts = async (fieldId) => {
   );
 
   if (!contextResponse.ok) {
+    if (contextResponse.status === 404) {
+      // Some custom fields are not available in the contexts API; treat as expected.
+      return [];
+    }
     await logFailedResponse(
       `[getAllFields] context request failed for fieldId=${fieldId}`,
       contextResponse

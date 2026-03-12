@@ -2,7 +2,7 @@ name: Deploy Atlassian Forge App
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ '**' ]
   workflow_dispatch: # allows manual runs from the GitHub UI
 
 env:
